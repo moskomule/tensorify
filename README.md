@@ -1,4 +1,6 @@
-# tensorify **WIP**
+# tensorify [![CircleCI](https://circleci.com/gh/moskomule/tensorify/tree/master.svg?style=svg)](https://circleci.com/gh/moskomule/tensorify/tree/master)
+
+Status is **WIP**.
 
 `tensorify` extends PyTorch tensors to tensor operations.
 
