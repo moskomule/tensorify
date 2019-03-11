@@ -2,6 +2,9 @@ from typing import Sequence
 
 import torch
 
+__all__ = ["is_vector", "is_matrix",
+           "product", "multilinier_product", "contracted_product", "outer_product", "kronecker_product"]
+
 
 def is_vector(input: torch.Tensor):
     return input.dim() == 1
