@@ -153,7 +153,7 @@ def _kkr_product(input: torch.Tensor,
         new_other_size.pop(2 * dim - 1)
         output_size[dim] / input.size(dim)
 
-    return (input.view(new_input_size) * other.view(new_other_size)).view(output_size)
+    return (input.view(new_input_size) * other.view(new_other_size)).view(output_size.tolist())
 
 
 def khatri_rao_product(input: torch.Tensor,
