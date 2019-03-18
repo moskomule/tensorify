@@ -86,3 +86,10 @@ def test_kronecker_product():
     assert torch.equal(product[0:3, 0:3, 0:3], other)
     # check if backward-able
     product.sum().backward()
+
+
+def test_direct_sum():
+    input = torch.randn(3, 3, 3)
+    other = torch.randn(4, 4, 4)
+    result = operations.direct_sum(input, other)
+    assert result.size() == torch.Size([7, 7, 7])
