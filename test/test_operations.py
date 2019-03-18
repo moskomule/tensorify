@@ -62,7 +62,7 @@ def test_contracted_product():
     # check if backward-able
     product.sum().backward()
     with pytest.raises(ValueError):
-        operations.contracted_product(input, torch.randn(3, 4, 2), dims=(2, 0))
+        operations.contracted_product(input, torch.randn(3, 4, 2), modes=(2, 0))
 
 
 def test_outer_prodcut():
@@ -90,6 +90,9 @@ def test_kronecker_product():
 
 def test_direct_sum():
     input = torch.randn(3, 3, 3)
-    other = torch.randn(4, 4, 4)
+    other = torch.randn(4, 4, 3)
     result = operations.direct_sum(input, other)
-    assert result.size() == torch.Size([7, 7, 7])
+    assert result.size() == torch.Size([7, 7, 6])
+
+    result = operations.direct_sum(input, other, 2)
+    assert result.size() == torch.Size([7, 7, 3])
