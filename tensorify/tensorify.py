@@ -1,3 +1,6 @@
+""" Contains some utilities
+"""
+
 import torch
 
 from tensorify import operations

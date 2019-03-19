@@ -1,3 +1,7 @@
+""" Tensor operations
+"""
+
+from collections import defaultdict
 from typing import Sequence, Tuple, Optional
 
 import torch
@@ -7,22 +11,23 @@ __all__ = ["is_vector", "is_matrix",
            "khatri_rao_product", "direct_sum"]
 
 
-def is_vector(input: torch.Tensor):
+def is_vector(input: torch.Tensor) -> bool:
     return input.dim() == 1
 
 
-def is_matrix(input: torch.Tensor):
+def is_matrix(input: torch.Tensor) -> bool:
     return input.dim() == 2
 
 
 def matricization(input: torch.Tensor,
-                  mode: int):
+                  mode: int) -> torch.Tensor:
     r""" Mode-n matricization of the input tensor as :math:`\mathbb{R}^{I_n\times I_1\dotsI_{n-1}I_{n+1}\dots I_N}`
 
     :param input:
     :param mode:
     :return:
     """
+
     if input.dim() <= mode:
         raise ValueError(f"`mode` is expected to be < {input.dim()}")
     if input.dim() > 26:
@@ -36,13 +41,14 @@ def matricization(input: torch.Tensor,
 
 
 def canonical_matricization(input: torch.Tensor,
-                            mode: int):
+                            mode: int) -> torch.Tensor:
     r""" Mode-n canonical matricization of the input tensor as :math:`\mathbb{R}^{I_1\dotsI_n\timesI_{n+1}\dots I_N}`
 
     :param input:
     :param mode:
     :return:
     """
+
     if input.dim() - 1 <= mode:
         raise ValueError(f"`mode` is expected to be < {input.dim() - 1} ")
     input_size = torch.tensor(input.size())
@@ -62,7 +68,7 @@ def product(input: torch.Tensor,
     """
 
     if input.dim() <= mode:
-        raise ValueError(f"`mode` is expected to be <= {input.dim()} but got {mode}")
+        raise ValueError(f"`mode` is expected to be < {input.dim()} but got {mode}")
     if not (is_vector(other) or is_matrix(other)):
         raise ValueError(f"`other` is expected to be vector or matrix")
     if input.size(mode) != other.size(-1):
@@ -81,6 +87,7 @@ def multilinier_product(core: torch.Tensor,
     :param factors:
     :return:
     """
+
     if core.dim() != len(factors):
         raise ValueError("Dimension of `core` and length of `factors` are expected to be same")
     for i, mat in enumerate(factors):
@@ -100,6 +107,7 @@ def contracted_product(input: torch.Tensor,
     :param modes:
     :return:
     """
+
     if modes is None:
         modes = [input.dim() - 1, 0]
     if len(modes) != 2:
@@ -117,6 +125,7 @@ def outer_product(input: torch.Tensor,
     :param other:
     :return:
     """
+
     if input.dim() > 13 or other.dim() > 13:
         raise RuntimeError("Dimension larger than 13 is not supported")
     input_alp = "abcdefghijklm"[:input.dim()]
@@ -136,6 +145,7 @@ def _kkr_product(input: torch.Tensor,
     :param mode:
     :return:
     """
+
     if input.dim() != other.dim():
         raise ValueError("Dimensions of `input` and `other` are expected to be same")
     if (mode is not None) and (input.size(mode) != other.size(mode)):
@@ -146,12 +156,16 @@ def _kkr_product(input: torch.Tensor,
 
     # input_size (a, b, c) -> (a, 1, b, 1, c, 1)
     new_input_size = torch.stack([input_size, torch.ones_like(input_size)], dim=1).view(-1).tolist()
+    # other_size (x, y ,z) -> (1, x, 1, y, 1, z)
     new_other_size = torch.stack([torch.ones_like(other_size), other_size], dim=1).view(-1).tolist()
-    output_size = (input_size * other_size)
+    # (ax, by, cz)
+    output_size = input_size * other_size
     if mode is not None:
+        # if dim=1, (a, 1, b, 1, c, 1), (1, x, 1, y, 1, z) -> (a, 1, b, c, 1), (1, x, y, 1, z)
         new_input_size.pop(2 * mode + 1)
-        new_other_size.pop(2 * mode - 1)
-        output_size[mode] / input.size(mode)
+        new_other_size.pop(2 * mode)
+        # if dim=1, (ax, b, cz)
+        output_size[mode] /= input.size(mode)
 
     return (input.view(new_input_size) * other.view(new_other_size)).view(output_size.tolist())
 
@@ -159,12 +173,13 @@ def _kkr_product(input: torch.Tensor,
 def khatri_rao_product(input: torch.Tensor,
                        other: torch.Tensor,
                        mode: int) -> torch.Tensor:
-    """ Left Khatri-Rao product of tensors
+    """ (Right) Khatri-Rao product of tensors
 
     :param input:
     :param other:
     :return:
     """
+
     if input.dim() <= mode:
         raise ValueError(f"`mode` should be smaller than {input.mode()}")
     return _kkr_product(input, other, mode)
@@ -172,31 +187,62 @@ def khatri_rao_product(input: torch.Tensor,
 
 def kronecker_product(input: torch.Tensor,
                       other: torch.Tensor) -> torch.Tensor:
-    """ Left Kronecker product of two tensors
+    """ (Right) Kronecker product of two tensors
 
     :param input:
     :param other:
     :return:
     """
+
     return _kkr_product(input, other, None)
+
+
+def left_khatri_rao_product(input: torch.Tensor,
+                            other: torch.Tensor,
+                            mode: int) -> torch.Tensor:
+    """ (Left) Khatri-Rao product of tensors
+
+    :param input:
+    :param other:
+    :return:
+    """
+
+    if input.dim() <= mode:
+        raise ValueError(f"`mode` should be smaller than {input.mode()}")
+    return _kkr_product(other, input, mode)
+
+
+def left_kronecker_product(input: torch.Tensor,
+                           other: torch.Tensor) -> torch.Tensor:
+    """ (Left) Kronecker product of two tensors
+
+    :param input:
+    :param other:
+    :return:
+    """
+
+    return _kkr_product(other, input, None)
 
 
 def direct_sum(input: torch.Tensor,
                other: torch.Tensor,
                mode: Optional[int] = None) -> torch.Tensor:
-    """ Direct sum of two tensors
+    """ Direct sum of two tensors. If `mode` is not None, mode-`mode` direct sum.
 
     :param input:
     :param other:
     :param mode:
     :return:
     """
+
     if input.dim() != other.dim():
         raise ValueError("Dimensions of `input` and `other` are expected to be same")
-    if mode is not None and (input.size(mode) != other.size(mode)):
+    if (mode is not None) and (input.size(mode) != other.size(mode)):
         raise ValueError(f"Sizes at {mode}th mode are expected to be same")
-    output_size = (torch.tensor(input.size()) + torch.tensor(other.size()))
+    # (a, b, c), (x, y, z) -> (a+x, b+y, c+z)
+    output_size = torch.tensor(input.size()) + torch.tensor(other.size())
     if mode is not None:
+        # if dim=1, (a+x, b, c+z)
         output_size[mode] //= 2
     base = input.new_zeros(output_size.tolist())
     new_input_slice = [slice(0, k) for k in input.size()]
@@ -207,3 +253,39 @@ def direct_sum(input: torch.Tensor,
     base[new_input_slice] = input
     base[new_other_slice] = other
     return base
+
+
+def _list_duplicates(seq):
+    # returns pairs of key and duplicated indices
+    dict = defaultdict(list)
+    for i, item in enumerate(seq):
+        dict[item].append(i)
+    return ((key, locs) for key, locs in dict.items() if len(locs) > 1)
+
+
+def tensor_trace(input: torch.Tensor) -> torch.Tensor:
+    """ Tensor Trace of the given tensor
+
+    :param input:
+    :return:
+    """
+
+    if input.dim() > 26:
+        raise RuntimeError("Dimension larger than 26 is not supported")
+    input_alp = "abcdefghijklmnopqrstuvwxyz"[:input.dim()]
+    output_alp = input_alp
+    input_alp = list(input_alp)
+
+    # expected: 4x3x2x3 -> 4x2
+    # input_alp: abcd -> abcb
+    # output_alp: ac
+    for k, v in _list_duplicates(input.size()):
+        for i in range(0, len(v) - 1, 2):
+            # remove duplicated characters from output_alp
+            output_alp = output_alp.replace(input_alp[v[2 * i]], "")
+            output_alp = output_alp.replace(input_alp[v[2 * i + 1]], "")
+            # use the same character for pairs
+            input_alp[v[2 * i + 1]] = input_alp[v[2 * i]]
+    input_alp = "".join(input_alp)
+    return torch.einsum(f"{input_alp}->{output_alp}",
+                        input)

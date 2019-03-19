@@ -77,15 +77,26 @@ def test_outer_prodcut():
 def test_kronecker_product():
     input = torch.randn(4, 3, 2)
     other = torch.randn(3, 3, 3)
-    input[0, 0, 0] = 1
     input.requires_grad_()
     product = operations.kronecker_product(input, other)
     # size check
     assert product.size() == torch.Size([4 * 3, 3 * 3, 2 * 3])
     # value check
-    assert torch.equal(product[0:3, 0:3, 0:3], other)
+    assert torch.equal(product[0:3, 0:3, 0:3],
+                       input[0, 0, 0] * other)
     # check if backward-able
     product.sum().backward()
+
+    # left version
+    assert torch.equal(operations.left_kronecker_product(input, other)[0: 4, 0:3, 0:2],
+                       other[0, 0, 0] * input)
+
+
+def test_kr_product():
+    input = torch.randn(4, 3, 2)
+    other = torch.randn(3, 3, 3)
+    product = operations.khatri_rao_product(input, other, 1)
+    assert product.size() == torch.Size([12, 3, 6])
 
 
 def test_direct_sum():
@@ -94,5 +105,22 @@ def test_direct_sum():
     result = operations.direct_sum(input, other)
     assert result.size() == torch.Size([7, 7, 6])
 
+    input.requires_grad_()
     result = operations.direct_sum(input, other, 2)
     assert result.size() == torch.Size([7, 7, 3])
+
+    result.sum().backward()
+
+
+def test_tensor_trace():
+    input = torch.randn(4, 3, 3, 3, requires_grad=True)
+    result = operations.tensor_trace(input)
+    assert torch.equal(result,
+                       torch.einsum("ijjk->ik", input))
+    # check if backward-able
+    result.sum().backward()
+
+    input = torch.randn(3, 3)
+    result = operations.tensor_trace(input)
+    assert torch.equal(result,
+                       input.detach().trace())
