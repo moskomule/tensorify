@@ -48,6 +48,7 @@ class CP(DecompositionBase):
 
         :return:
         """
+
         if self.core is None or self.factors is None:
             raise RuntimeError("Tensor is not decomposed yet!")
         return CP.cp_compose(self.core, self.factors)
