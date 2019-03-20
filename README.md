@@ -7,6 +7,8 @@ Status is **WIP**.
 
 ## Requirements
 
+`tensorify` is pure PyTorch, without any other dependenccies.
+
 * Python >= 3.7
 * PyTorch >= 1.0
 
@@ -16,10 +18,12 @@ Status is **WIP**.
 
 ## Usage
 
+Some basic operations are supported. `tensorify` adds such operations to `torch.Tensor`.
+
 ```python
 import torch
 # or `from tensorify import torch`
-from tensorify import operations #, torch
+from tensorify import operations
 
 input = torch.randn(4, 3, 2)
 other = torch.randn(4, 3)
@@ -27,7 +31,19 @@ other = torch.randn(4, 3)
 operations.product(input, other, 1)
 # or
 input.product(other, 1)
+```
 
+Also, some tensor decomposition methods are supported. Some operations between decomposed tensors can be done without re-composing.
+
+```python
+from tensorify.decompositions import TensorTrain
+
+tt1 = TensorTrain()
+tt2 = TensorTrain()
+tt1.decompose(input)
+tt2.decompose(input)
+# decomposed tensor supports some operations
+tt1 + tt2
 ```
 
 Once `tensorify` is called, operations are automatically registered as `torch.Tensor`'s methods.

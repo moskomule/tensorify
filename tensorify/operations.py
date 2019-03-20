@@ -7,8 +7,9 @@ from typing import Sequence, Tuple, Optional
 import torch
 
 __all__ = ["is_vector", "is_matrix",
-           "product", "multilinier_product", "contracted_product", "outer_product", "kronecker_product",
-           "khatri_rao_product", "direct_sum"]
+           "product", "multilinier_product", "contracted_product", "outer_product",
+           "kronecker_product", "left_kronecker_product", "left_khatri_rao_product",
+           "khatri_rao_product", "direct_sum", "tensor_trace"]
 
 
 def is_vector(input: torch.Tensor) -> bool:
